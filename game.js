@@ -84,10 +84,10 @@ class Actor {
                 throw new Error('Должет быть передан параметр типа Actor');
             } else if (actor == this) return false;
 
-            else if (this.left < actor.bottom &&
-                this.bottom > actor.left &&
-                this.top < actor.right &&
-                this.right > actor.top) {
+            else if (this.left < actor.right &&
+                this.bottom > actor.top &&
+                this.top < actor.bottom &&
+                this.right > actor.left) {
                 return true;
             } else return false;
         } // isIntersect
