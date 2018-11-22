@@ -19,21 +19,12 @@ class Vector {
     }
 }
 
-//=======================
-const start = new Vector(30, 50);
-const moveTo = new Vector(5, 10);
-const finish = start.plus(moveTo.times(2));
-
-console.log(`Исходное расположение: ${start.x}:${start.y}`);
-console.log(`Текущее расположение: ${finish.x}:${finish.y}`);
-//=======================
 
 class Actor {
     constructor(pos = new Vector(0, 0),
             size = new Vector(1, 1),
             speed = new Vector(0, 0)
         ) {
-
             if (!(pos instanceof Vector)) {
                 throw new Error('Параметром pos можно передавать только вектор типа Vector');
             }
@@ -81,65 +72,32 @@ class Actor {
                 this.right > actor.left) return true
             else return false;
         } // isIntersect
-} // Actor
+} // class Actor
 
-//=======================
-const items = new Map();
-const player = new Actor();
-items.set('Игрок', player);
-items.set('Первая монета', new Actor(new Vector(10, 10)));
-items.set('Вторая монета', new Actor(new Vector(15, 5)));
 
-function position(item) {
-    return ['left', 'top', 'right', 'bottom']
-        .map(side => `${side}: ${item[side]}`)
-        .join(', ');
-}
 
-function movePlayer(x, y) {
-    player.pos = player.pos.plus(new Vector(x, y));
-}
-
-function status(item, title) {
-    console.log(`${title}: ${position(item)}`);
-    if (player.isIntersect(item)) {
-        console.log(`Игрок подобрал ${title}`);
-    }
-}
-
-items.forEach(status);
-movePlayer(10, 10);
-items.forEach(status);
-movePlayer(5, -5);
-items.forEach(status);
-//=======================
-
+// ИГРОВОЕ ПОЛЕ
 class Level {
-    constructor(grid = [], actors = []) {
-        this.grid = grid;
-        this.actors = actors;
+    constructor(grid, actors) {
+            this.grid = grid;
+            this.actors = actors;
 
-        /*Что значит: "тип которого — свойство type — равно player"? 
-        и
-        "Игорок передаётся с остальными движущимися объектами"?
-        Пожалуйста, можно дать развёрнутый ответ; так, чтобы было
-        понянто как писать эту часть кода.*/
-        this.player = 'player';
+            /*ЧТО ЗНАЧИТ: "тип которого — свойство type — равно player"? 
+            И
+            "Игорок передаётся с остальными движущимися объектами"?*/
+            this.player = 'player';
 
 
-        this.status = null;
-        this.finishDelay = 1;
-    }
+            this.height = this.grid.length || 0;
 
-    get height() {
-        return this.grid.length;
-    }
+            this.width = this.grid.reduce((memo, x) => {
+                return x.length > memo ? x.length : memo;
+            }, 0);
 
-    get width() {
-        this.grid.reduce((memo, el) => {
-            return memo.length < el.length ? el : memo;
-        }, this.grid[0]);
-    }
+            this.status = null;
+            this.finishDelay = 1;
+        } // constructor
+
 
     isFinished() {
         return (this.status !== null && this.finishDelay < 0);
@@ -155,51 +113,103 @@ class Level {
         });
     }
 
-    obstacleAt(direction, dimention) {
-        if (!(direction instanceof Vector) && !(dimention instanceof Vector)) {
+    obstacleAt(pos, size) {
+        if (!(size instanceof Vector) && !(size instanceof Vector)) {
             throw new Error('Следует передать аргументы типа Vector');
         }
+
+        let actor = new Actor(pos, size);
+
+        if (actor.bottom > this.height) {
+            return 'lava';
+        } else if (
+            (actor.left < 0) ||
+            (actor.top < 0) ||
+            (actor.right > this.width)) {
+            return 'wall';
+        } else {
+            return undefined;
+        }
     }
-}
 
-const lev = new Level();
-console.log(lev);
+    removeActor(actor) {
+        if (!actor || !(actor instanceof Actor)) return;
+        else this.actors.splice(this.actors.indexOf(actor), 1);
+    }
 
-//=======================
-// const grid = [
-//     [undefined, undefined],
-//     ['wall', 'wall']
-//   ];
+    noMoreActors(type) {
 
-//   function MyCoin(title) {
-//     this.type = 'coin';
-//     this.title = title;
-//   }
-//   MyCoin.prototype = Object.create(Actor);
-//   MyCoin.constructor = MyCoin;
+        let flag = true;
+        this.actors.forEach((actor) => {
+            if (actor.type == type) {
+                flag = false
+            };
+        });
+        return flag;
+    }
 
-//   const goldCoin = new MyCoin('Золото');
-//   const bronzeCoin = new MyCoin('Бронза');
-//   const player = new Actor();
-//   const fireball = new Actor();
+    playerTouched(type /*string*/ , actor /*Actor*/ ) {
 
-//   const level = new Level(grid, [ goldCoin, bronzeCoin, player, fireball ]);
+        if (this.status !== null) return;
 
-//   level.playerTouched('coin', goldCoin);
-//   level.playerTouched('coin', bronzeCoin);
+        else if (type === 'lava' || type === 'fireball') {
+            this.status = 'lost';
+        } else if (type === 'coin' && actor instanceof Coin) {
+            delete actor;
+            if (this.noMoreActors(type)) this.status = 'won';
+        }
+    }
 
-//   if (level.noMoreActors('coin')) {
-//     console.log('Все монеты собраны');
-//     console.log(`Статус игры: ${level.status}`);
-//   }
+} //class Level
 
-//   const obstacle = level.obstacleAt(new Vector(1, 1), player.size);
-//   if (obstacle) {
-//     console.log(`На пути препятствие: ${obstacle}`);
-//   }
 
-//   const otherActor = level.actorAt(player);
-//   if (otherActor === fireball) {
-//     console.log('Пользователь столкнулся с шаровой молнией');
-//   }
-//=======================
+
+// Монета
+class Coin extends Actor {
+    constructor(pos) {
+        super(pos, size);
+        this.size = new Vector(0.6, 0.6);
+        this.pos = pos.plus(0.2, 0.1);
+    };
+
+
+    Object.defineProperties(this, {
+        'type': {
+            value: 'coin'
+        },
+        'springSpeed': { // Скорость подпрыгивания
+            get() { return 8 }
+        },
+        'springDist': { // Радиус подпрыгивания
+            get() { return 0.07 }
+        },
+        'spring': { // Фаза подпрыгивания
+            get() { return Math.floor(Math.random() * 2 * Math.PI) },
+            set(value) { return Math.floor(Math.random() * 2 * Math.PI) * value }
+        },
+    });
+
+    updateSpring(t = 1) { // Обновляет фазу подпрыгивания
+        this.spring += this.springSpeed * t;
+    };
+
+    getSpringVector() { // Создает и возвращает вектор подпрыгивания
+        return new Vector(0, Math.sin(this.spring) * this.springDist);
+    };
+
+    getNextPosition(t = 1) { // Обновляет текущую фазу
+        /*Новый вектор равен базовому вектору положения, 
+        увеличенному на вектор подпрыгивания. 
+        Увеличивать нужно именно базовый вектор положения, 
+        который получен в конструкторе, а не текущий.*/
+        /*ЧТО ЗНАЧИТ "базовый вектор положения"? и
+        "текущий"? */
+        let nextPosition = new Vector().times(getSpringVector);
+    };
+
+    act(t) {
+        /*Принимает один аргумент — время. 
+        Получает новую позицию объекта и задает её как текущую...*/
+        /*ЧТО ЗНАЧИТ "новая позиция объекта"? Какого объекта?*/
+    }
+} // class Coin
