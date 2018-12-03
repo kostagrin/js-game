@@ -61,9 +61,9 @@ class Actor {
     isIntersect(actor) {
             if (actor === undefined || !(actor instanceof Actor)) {
                 throw new Error('Следует передать аргумент типа Actor');
-            } else if (actor === this) return false;
-
-            else {
+            } else if (actor === this) {
+                return false;
+            } else {
                 return (
                     this.left < actor.right &&
                     this.bottom > actor.top &&
@@ -117,11 +117,15 @@ class Level {
 
         let actor = new Actor(pos, size);
 
-        let top = Math.floor(actor.top);
-        let right = Math.ceil(actor.right);
-        let bottom = Math.ceil(actor.bottom)
-        let left = Math.floor(actor.left);
+        // let top = Math.floor(actor.top);
+        // let right = Math.ceil(actor.right);
+        // let bottom = Math.ceil(actor.bottom);
+        // let left = Math.floor(actor.left);
 
+        const top = Math.floor(actor.top),
+            right = Math.ceil(actor.right),
+            bottom = Math.ceil(actor.bottom),
+            left = Math.floor(actor.left);
 
         if (bottom > this.height) {
             return 'lava';
@@ -152,14 +156,17 @@ class Level {
 
 
     playerTouched(type, actor) {
-
-        if (this.status !== null) return;
-
-        else if (type === 'lava' || type === 'fireball') {
+        /*Former string 156; conditions after "if"
+        have been nested in curly brackets.*/
+        if (this.status !== null) {
+            return;
+        } else if (type === 'lava' || type === 'fireball') {
             this.status = 'lost';
         } else if (type === 'coin' && actor.type === 'coin') {
             this.removeActor(actor);
-            if (this.noMoreActors(type)) this.status = 'won';
+            if (this.noMoreActors(type)) {
+                this.status = 'won';
+            }
         }
     }
 } // class Level
